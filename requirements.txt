@@ -1,8 +1,10 @@
 streamlit
 opencv-python-headless
-torch
-pandas
 Pillow
-PyYAML
+torch==1.13.1
+torchvision==0.14.1
+pandas
+numpy
 matplotlib
 seaborn
+pyyaml
