@@ -9,7 +9,6 @@ from PIL import Image
 import sys
 sys.path.insert(0, os.path.abspath('./yolov5'))
 
-from models.common import DetectMultiBackend
 from utils.datasets import letterbox
 from utils.general import (non_max_suppression, scale_coords)
 from utils.torch_utils import select_device
