@@ -2,61 +2,44 @@ import streamlit as st
 from detect import detect_image, detect_video
 import os
 
-# WAJIB baris pertama
-st.set_page_config(page_title="Deteksi Hilal YOLOv5 + SQM/Hisab", layout="centered")
+st.set_page_config(page_title="Deteksi Hilal YOLOv5", layout="centered")
 
-st.title("🌙 Deteksi Hilal Otomatis")
-st.write("Aplikasi ini menggunakan YOLOv5 untuk mendeteksi hilal dari citra atau video observasi.")
+st.title("Aplikasi Deteksi Hilal dengan YOLOv5")
 
-# Input tambahan: SQM dan Hisab
-with st.sidebar:
-    st.header("📥 Input Tambahan")
-    sqm_value = st.text_input("Masukkan nilai SQM (jika ada)", placeholder="Contoh: 20.35")
-    hisab_note = st.text_area("Catatan hasil Hisab", placeholder="Contoh: Hilal diperkirakan terlihat pukul 18:15 WIB")
+menu = st.radio("Pilih mode:", ["Deteksi Gambar", "Deteksi Video"])
 
-tab1, tab2 = st.tabs(["🖼️ Deteksi Gambar", "🎥 Deteksi Video"])
+if menu == "Deteksi Gambar":
+    uploaded_image = st.file_uploader("Unggah Gambar", type=["jpg", "jpeg", "png"])
+    if uploaded_image:
+        st.image(uploaded_image, caption="Gambar Asli", use_container_width=True)
+        with st.spinner("Mendeteksi..."):
+            output_img_path, csv_path, excel_path = detect_image(uploaded_image)
+        st.image(output_img_path, caption="Hasil Deteksi", use_container_width=True)
 
-# --- Tab Deteksi Gambar ---
-with tab1:
-    uploaded_image = st.file_uploader("Unggah Gambar Hilal", type=["jpg", "jpeg", "png"])
+        with open(output_img_path, "rb") as f:
+            st.download_button("📷 Unduh Gambar Deteksi", f, file_name=os.path.basename(output_img_path))
 
-    if uploaded_image is not None:
-        with st.spinner("Mendeteksi hilal dalam gambar..."):
-            img_path, csv_path, excel_path = detect_image(uploaded_image)
+        if csv_path:
+            with open(csv_path, "rb") as f:
+                st.download_button("📊 Unduh Data CSV", f, file_name=os.path.basename(csv_path))
+        if excel_path:
+            with open(excel_path, "rb") as f:
+                st.download_button("📈 Unduh Data Excel", f, file_name=os.path.basename(excel_path))
 
-            st.image(img_path, caption="Hasil Deteksi", use_container_width=True)
+elif menu == "Deteksi Video":
+    uploaded_video = st.file_uploader("Unggah Video", type=["mp4", "avi", "mov"])
+    if uploaded_video:
+        with st.spinner("Memproses video..."):
+            output_video_path, csv_path = detect_video(uploaded_video)
 
-            st.success("Deteksi selesai.")
-            st.download_button("📥 Unduh CSV", open(csv_path, "rb"), file_name=os.path.basename(csv_path))
-            st.download_button("📥 Unduh Excel", open(excel_path, "rb"), file_name=os.path.basename(excel_path))
+        if output_video_path and os.path.exists(output_video_path):
+            st.video(output_video_path)
+            with open(output_video_path, "rb") as f:
+                st.download_button("🎥 Unduh Video Deteksi", f, file_name=os.path.basename(output_video_path))
 
-        # Tampilkan input tambahan
-        if sqm_value:
-            st.info(f"**Nilai SQM:** {sqm_value}")
-        if hisab_note:
-            st.info(f"**Catatan Hisab:** {hisab_note}")
+            if csv_path:
+                with open(csv_path, "rb") as f:
+                    st.download_button("📊 Unduh Data CSV", f, file_name=os.path.basename(csv_path))
+        else:
+            st.error("Gagal memproses video.")
 
-# --- Tab Deteksi Video ---
-with tab2:
-    uploaded_video = st.file_uploader("Unggah Video Hilal", type=["mp4", "avi", "mov"])
-
-    if uploaded_video is not None:
-        with st.spinner("Mendeteksi hilal dalam video..."):
-            video_path, csv_path, excel_path = detect_video(uploaded_video)
-
-            if video_path:
-                st.video(video_path)
-                st.success("Deteksi selesai pada video.")
-                st.download_button("📥 Unduh CSV", open(csv_path, "rb"), file_name=os.path.basename(csv_path))
-                st.download_button("📥 Unduh Excel", open(excel_path, "rb"), file_name=os.path.basename(excel_path))
-            else:
-                st.warning("Tidak ada deteksi hilal pada video.")
-
-        # Tampilkan input tambahan
-        if sqm_value:
-            st.info(f"**Nilai SQM:** {sqm_value}")
-        if hisab_note:
-            st.info(f"**Catatan Hisab:** {hisab_note}")
-
-st.markdown("---")
-st.caption("🛠️ Dibuat oleh Mahasiswa Ilmu Falak | Powered by YOLOv5 + Streamlit")
