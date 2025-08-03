@@ -6,15 +6,17 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
-# Tambahkan path ke folder YOLOv5 lokal
+# Tambahkan path ke YOLOv5 lokal
 YOLOV5_PATH = os.path.join(os.path.dirname(__file__), 'yolov5')
 if YOLOV5_PATH not in sys.path:
     sys.path.append(YOLOV5_PATH)
 
-from models.common import DetectMultiBackend
-from utils.datasets import LoadImages
-from utils.general import non_max_suppression, scale_coords
-from utils.torch_utils import select_device
+# Impor dari YOLOv5 lokal
+from yolov5.models.common import DetectMultiBackend
+from yolov5.utils.datasets import LoadImages
+from yolov5.utils.general import non_max_suppression, scale_coords
+from yolov5.utils.torch_utils import select_device
+
 
 # Load model YOLOv5
 def load_model():
