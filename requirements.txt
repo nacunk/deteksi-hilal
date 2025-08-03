@@ -1,8 +1,5 @@
 streamlit
 torch
-opencv-python-headless
+opencv-python
 pandas
-numpy
 Pillow
-gdown
-openpyxl
