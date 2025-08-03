@@ -4,3 +4,4 @@ opencv-python
 pandas
 Pillow
 ultralytics
+seaborn
