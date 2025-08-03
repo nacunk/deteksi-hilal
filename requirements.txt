@@ -1,0 +1,8 @@
+streamlit
+torch
+opencv-python
+numpy
+pandas
+Pillow
+pydrive
+firebase-admin
