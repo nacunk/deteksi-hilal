@@ -1,0 +1,27 @@
+streamlit==1.48.1
+
+# PyTorch + torchvision (kompatibel dengan Python 3.13 di Streamlit Cloud)
+torch==2.5.1
+torchvision==0.20.1
+
+# Image & Video processing
+opencv-python-headless==4.9.0.80
+Pillow>=9.0.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Networking & API (BMKG / eksternal)
+requests>=2.31.0
+
+# Astronomi & Hisab
+skyfield>=1.49
+
+# Serial komunikasi (untuk hardware SQM)
+pyserial>=3.5
+
+# Tambahan utilitas
+matplotlib>=3.7.0
+scipy>=1.11.0
