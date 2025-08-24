@@ -1,6 +1,6 @@
 streamlit==1.48.1
 
-# PyTorch + torchvision (cocok untuk Python 3.13 di Streamlit Cloud)
+# PyTorch + torchvision (kompatibel dengan Python 3.13 di Streamlit Cloud)
 torch==2.5.1
 torchvision==0.20.1
 
@@ -15,11 +15,5 @@ numpy>=1.24.0
 # Export ke Excel
 openpyxl>=3.1.0
 
-# Networking & API untuk BMKG / eksternal
+# Networking & API (BMKG / eksternal)
 requests>=2.31.0
-
-# Astronomi / hisab
-skyfield>=1.49
-
-# SQM otomatis (opsional)
-pyserial>=3.5
