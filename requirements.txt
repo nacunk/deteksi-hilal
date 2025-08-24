@@ -5,7 +5,7 @@ streamlit==1.38.0
 torch>=2.0.0
 torchvision>=0.15.0
 
-# Image & Video processing
+# Image & Video processing (headless untuk cloud)
 opencv-python-headless==4.9.0.80
 Pillow>=9.0.0
 
@@ -24,4 +24,3 @@ skyfield>=1.49
 
 # SQM otomatis (opsional, kalau pakai perangkat via USB/Serial)
 pyserial>=3.5
-
