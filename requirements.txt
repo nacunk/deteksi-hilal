@@ -1,9 +1,8 @@
 streamlit
+torch==2.2.2
+torchvision==0.17.2
 opencv-python-headless
 pandas
 Pillow
 openpyxl
 requests
-torch==2.2.2
-torchvision==0.17.2
-
