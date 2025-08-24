@@ -1,26 +1,8 @@
-# Framework utama
-streamlit==1.38.0
-
-# YOLOv5 dan PyTorch
-torch>=2.0.0
-torchvision>=0.15.0
-
-# Image & Video processing (headless untuk cloud)
-opencv-python-headless==4.9.0.80
-Pillow>=9.0.0
-
-# Data handling
-pandas>=2.0.0
-numpy>=1.24.0
-
-# Export ke Excel
-openpyxl>=3.1.0
-
-# Networking & API untuk BMKG / eksternal
-requests>=2.31.0
-
-# Astronomi / hisab (opsional kalau mau sunset/hilal)
-skyfield>=1.49
-
-# SQM otomatis (opsional, kalau pakai perangkat via USB/Serial)
-pyserial>=3.5
+streamlit
+torch
+torchvision
+opencv-python-headless
+pandas
+Pillow
+openpyxl
+requests
