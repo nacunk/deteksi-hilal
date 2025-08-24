@@ -1,9 +1,25 @@
-streamlit
-torch==2.2.2+cpu
-torchvision==0.17.2+cpu
---extra-index-url https://download.pytorch.org/whl/cpu
-opencv-python-headless==4.8.1.78
-pandas
-Pillow
-openpyxl
-requests
+streamlit==1.48.1
+
+# PyTorch + torchvision (cocok untuk Python 3.13 di Streamlit Cloud)
+torch==2.5.1
+torchvision==0.20.1
+
+# Image & Video processing
+opencv-python-headless==4.9.0.80
+Pillow>=9.0.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Export ke Excel
+openpyxl>=3.1.0
+
+# Networking & API untuk BMKG / eksternal
+requests>=2.31.0
+
+# Astronomi / hisab
+skyfield>=1.49
+
+# SQM otomatis (opsional)
+pyserial>=3.5
