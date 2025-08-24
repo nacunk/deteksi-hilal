@@ -25,4 +25,3 @@ skyfield>=1.49
 # SQM otomatis (opsional, kalau pakai perangkat via USB/Serial)
 pyserial>=3.5
 
-opencv-python-headless==4.9.0.80
