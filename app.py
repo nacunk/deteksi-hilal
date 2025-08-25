@@ -1,136 +1,133 @@
 import streamlit as st
-import os
-import cv2
+import serial
 import torch
+import cv2
+import os
 import tempfile
 import pandas as pd
 from PIL import Image
 import requests
+from datetime import datetime
 
-# ==== Streamlit Config ====
-st.set_page_config(page_title="Deteksi Hilal YOLOv5 + SQM/Hisab", layout="centered")
+# Inisialisasi aplikasi
+st.set_page_config(page_title="Deteksi Hilal + SQM + BMKG", layout="centered")
+st.title("Aplikasi Deteksi Hilal dengan SQM & Cuaca BMKG")
 
-# ==== Load Model YOLOv5 (hanya sekali) ====
+# Load YOLOv5 model
 @st.cache_resource
 def load_model():
-    return torch.hub.load("ultralytics/yolov5", "custom", path="best.pt", source="github")
+    mdl = torch.hub.load("ultralytics/yolov5", "custom", path="best.pt", source="github")
+    mdl.conf = 0.25
+    return mdl
 
 model = load_model()
-model.conf = 0.25  # threshold confidence
-
-# ==== Buat folder output ====
 os.makedirs("outputs", exist_ok=True)
 
-# ==== Fungsi Deteksi Gambar ====
+# Fungsi deteksi gambar
 def detect_image(image_file):
     img = Image.open(image_file).convert("RGB")
     results = model(img)
     results.render()
-    
-    output_img_path = os.path.join("outputs", image_file.name)
+    fname = f"detected_{image_file.name}"
+    out_img = os.path.join("outputs", fname)
     img_bgr = cv2.cvtColor(results.ims[0], cv2.COLOR_RGB2BGR)
-    cv2.imwrite(output_img_path, img_bgr)
-    
-    # Simpan CSV & Excel
+    cv2.imwrite(out_img, img_bgr)
     df = results.pandas().xyxy[0]
-    csv_path = os.path.splitext(output_img_path)[0] + "_detection.csv"
-    excel_path = os.path.splitext(output_img_path)[0] + "_detection.xlsx"
-    df.to_csv(csv_path, index=False)
-    df.to_excel(excel_path, index=False)
-    
-    return output_img_path, csv_path, excel_path
+    csv = out_img.rsplit('.',1)[0] + ".csv"
+    xlsx = out_img.rsplit('.',1)[0] + ".xlsx"
+    if not df.empty:
+        df.to_csv(csv, index=False)
+        df.to_excel(xlsx, index=False)
+    else:
+        csv, xlsx = None, None
+    return out_img, csv, xlsx
 
-# ==== Fungsi Deteksi Video ====
+# Fungsi deteksi video
 def detect_video(video_file):
     tfile = tempfile.NamedTemporaryFile(delete=False)
     tfile.write(video_file.read())
-    input_path = tfile.name
-    
-    cap = cv2.VideoCapture(input_path)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    cap = cv2.VideoCapture(tfile.name)
+    w, h = int(cap.get(3)), int(cap.get(4))
     fps = cap.get(cv2.CAP_PROP_FPS)
-    
-    output_path = os.path.join("outputs", "hilal_detected.mp4")
-    out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-    
-    all_detections = []
-    frame_idx = 0
-    
+    outsv = os.path.join("outputs", "hilal_detected.mp4")
+    out = cv2.VideoWriter(outsv, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+    all_dets, frame_idx = [], 0
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
+        if not ret: break
         results = model(frame)
         results.render()
-        img_bgr = cv2.cvtColor(results.ims[0], cv2.COLOR_RGB2BGR)
-        out.write(img_bgr)
-        
+        bgr = cv2.cvtColor(results.ims[0], cv2.COLOR_RGB2BGR)
+        out.write(bgr)
         df = results.pandas().xyxy[0]
         df["frame"] = frame_idx
-        all_detections.append(df)
+        all_dets.append(df)
         frame_idx += 1
-    
-    cap.release()
-    out.release()
-    
-    if all_detections:
-        detections_df = pd.concat(all_detections, ignore_index=True)
-        csv_path = os.path.join("outputs", "hilal_detected.csv")
-        excel_path = os.path.join("outputs", "hilal_detected.xlsx")
-        detections_df.to_csv(csv_path, index=False)
-        detections_df.to_excel(excel_path, index=False)
+    cap.release(); out.release()
+    if all_dets:
+        df = pd.concat(all_dets, ignore_index=True)
+        csv = outsv.replace(".mp4", ".csv")
+        xlsx = outsv.replace(".mp4", ".xlsx")
+        df.to_csv(csv, index=False)
+        df.to_excel(xlsx, index=False)
     else:
-        csv_path, excel_path = None, None
-    
-    return output_path, csv_path, excel_path
+        csv, xlsx = None, None
+    return outsv, csv, xlsx
 
-# ==== Fitur SQM Manual ====
-sqm_value = st.number_input("Masukkan nilai SQM (mag/arcsec²):", min_value=0.0, step=0.01)
-if sqm_value:
-    st.write(f"Nilai SQM: {sqm_value} mag/arcsec²")
-
-# ==== Collect Data Eksternal ====
-st.subheader("Data Cuaca / Astronomi dari BMKG / API")
+# SQM otomatis via USB (fallback manual)
+sqm_auto = None
 try:
-    # Contoh: sunset/waktu maghrib Jakarta
-    params = {"lat": -6.2, "lng": 106.8, "formatted": 0}
-    res = requests.get("https://api.sunrise-sunset.org/json", params=params).json()
-    sunset_time = res["results"]["sunset"]
-    st.write(f"Waktu Sunset Jakarta (UTC): {sunset_time}")
-except Exception as e:
-    st.warning("Gagal mengambil data eksternal.")
+    ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+    sqm_auto = ser.readline().decode().strip()
+    ser.close()
+except:
+    sqm_auto = None
 
-# ==== Menu Deteksi ====
-st.title("🌙 Deteksi Hilal Otomatis")
+sqm_manual = st.number_input("Masukkan nilai SQM (manual, mag/arcsec²)", min_value=0.0, step=0.01)
+sqm_display = sqm_auto or sqm_manual
+if sqm_auto:
+    st.success(f"SQM otomatis terbaca: {sqm_auto}")
+elif sqm_manual:
+    st.info(f"SQM manual: {sqm_manual}")
+
+# Ambil prakiraan cuaca BMKG
+st.subheader("Prakiraan Cuaca BMKG (3 hari)")
+kode_kel = st.text_input("Masukkan kode wilayah (ADM IV)", placeholder="mis: 64.74.01.1006")
+prakicuaca = None
+if st.button("Ambil Data Cuaca"):
+    if kode_kel:
+        url = f"https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={kode_kel}"
+        try:
+            res = requests.get(url).json()
+            prakicuaca = res.get("data")
+            st.json(prakicuaca)
+        except:
+            st.error("Gagal mengambil data dari BMKG")
+    else:
+        st.warning("Silakan isi kode wilayah.")
+
+# Upload deteksi
 menu = st.radio("Pilih mode:", ["Deteksi Gambar", "Deteksi Video"])
 
 if menu == "Deteksi Gambar":
-    uploaded_image = st.file_uploader("Unggah Gambar", type=["jpg", "png", "jpeg"])
+    uploaded_image = st.file_uploader("Gambar Hilal", type=["jpg", "jpeg", "png"])
     if uploaded_image:
-        st.image(uploaded_image, caption="Gambar asli", use_container_width=True)
-        with st.spinner("Mendeteksi..."):
-            output_img_path, csv_path, excel_path = detect_image(uploaded_image)
-        st.image(output_img_path, caption="Hasil Deteksi", use_container_width=True)
-        st.success("Deteksi selesai.")
-        # Download
-        with open(output_img_path, "rb") as f:
-            st.download_button("📷 Unduh Gambar Deteksi", f, file_name=os.path.basename(output_img_path))
-        with open(csv_path, "rb") as f:
-            st.download_button("📊 Unduh CSV Deteksi", f, file_name=os.path.basename(csv_path))
-        with open(excel_path, "rb") as f:
-            st.download_button("📑 Unduh Excel Deteksi", f, file_name=os.path.basename(excel_path))
+        st.image(uploaded_image, caption="Input", use_container_width=True)
+        with st.spinner("Deteksi berlangsung..."):
+            out_img, csv, xlsx = detect_image(uploaded_image)
+        st.image(out_img, caption="Hasil Deteksi", use_container_width=True)
+        st.download_button("Unduh Gambar", open(out_img,"rb"), file_name=os.path.basename(out_img))
+        if csv and xlsx:
+            st.download_button("Unduh CSV", open(csv,"rb"), file_name=os.path.basename(csv))
+            st.download_button("Unduh Excel", open(xlsx,"rb"), file_name=os.path.basename(xlsx))
 
 elif menu == "Deteksi Video":
-    uploaded_video = st.file_uploader("Unggah Video", type=["mp4", "avi", "mov"])
+    uploaded_video = st.file_uploader("Video Hilal", type=["mp4","avi","mov"])
     if uploaded_video:
-        with st.spinner("Memproses video..."):
-            output_video_path, csv_path, excel_path = detect_video(uploaded_video)
-        st.video(output_video_path)
-        st.success("Deteksi video selesai.")
-        with open(output_video_path, "rb") as f:
-            st.download_button("🎥 Unduh Video Deteksi", f, file_name="hilal_detected.mp4")
-        with open(csv_path, "rb") as f:
-            st.download_button("📊 Unduh CSV Deteksi", f, file_name="hilal_detected.csv")
-        with open(excel_path, "rb") as f:
-            st.download_button("📑 Unduh Excel Deteksi", f, file_name="hilal_detected.xlsx")
+        with st.spinner("Memproses..."):
+            out_vid, csv, xlsx = detect_video(uploaded_video)
+        st.video(out_vid)
+        st.download_button("Unduh Video", open(out_vid,"rb"), file_name=os.path.basename(out_vid))
+        if csv and xlsx:
+            st.download_button("Unduh CSV", open(csv,"rb"), file_name=os.path.basename(csv))
+            st.download_button("Unduh Excel", open(xlsx,"rb"), file_name=os.path.basename(xlsx))
