@@ -131,3 +131,4 @@ elif menu == "Deteksi Video":
         if csv and xlsx:
             st.download_button("Unduh CSV", open(csv,"rb"), file_name=os.path.basename(csv))
             st.download_button("Unduh Excel", open(xlsx,"rb"), file_name=os.path.basename(xlsx))
+   
